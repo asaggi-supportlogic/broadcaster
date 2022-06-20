@@ -2,6 +2,7 @@ version: '3'
 services:
   zookeeper:
     image: "confluentinc/cp-zookeeper"
+    platform: linux/amd64
     hostname: zookeeper
     ports:
       - 32181:32181
@@ -10,6 +11,7 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
   kafka:
     image: confluentinc/cp-kafka
+    platform: linux/amd64
     hostname: kafka
     ports:
     - 9092:9092
@@ -36,3 +38,11 @@ services:
       - POSTGRES_USER=postgres
     ports:
       - 5432:5432
+  google-cloud-pubsub:
+    image: google/cloud-sdk
+    entrypoint: |
+      gcloud beta emulators pubsub start
+      --host-port=0.0.0.0:8086
+      --project=broadcaster-local
+    ports:
+      - "8086:8086"

@@ -15,5 +15,8 @@ else
     PIP="pip"
 fi
 
+export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
+export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1
+
 "$PIP" install -r "$REQUIREMENTS"
 "$PIP" install -e .

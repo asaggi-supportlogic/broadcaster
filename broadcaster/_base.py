@@ -1,4 +1,5 @@
 import asyncio
+import enum
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, AsyncIterator, Dict, Optional
 from urllib.parse import urlparse
@@ -24,6 +25,15 @@ class Unsubscribed(Exception):
     pass
 
 
+class BackendSchemes(enum.Enum):
+    redis = enum.auto()
+    postgres = enum.auto()
+    postgresql = enum.auto()
+    kafka = enum.auto()
+    memory = enum.auto()
+    google_cloud_pubsub = "google-cloud-pubsub"
+
+
 class Broadcast:
     def __init__(self, url: str):
         from broadcaster._backends.base import BroadcastBackend
@@ -31,25 +41,33 @@ class Broadcast:
         parsed_url = urlparse(url)
         self._backend: BroadcastBackend
         self._subscribers: Dict[str, Any] = {}
-        if parsed_url.scheme == "redis":
+        if parsed_url.scheme == BackendSchemes.redis.name:
             from broadcaster._backends.redis import RedisBackend
 
             self._backend = RedisBackend(url)
 
-        elif parsed_url.scheme in ("postgres", "postgresql"):
+        if parsed_url.scheme in (
+            BackendSchemes.postgres.name,
+            BackendSchemes.postgresql.name,
+        ):
             from broadcaster._backends.postgres import PostgresBackend
 
             self._backend = PostgresBackend(url)
 
-        if parsed_url.scheme == "kafka":
+        if parsed_url.scheme == BackendSchemes.kafka.name:
             from broadcaster._backends.kafka import KafkaBackend
 
             self._backend = KafkaBackend(url)
 
-        elif parsed_url.scheme == "memory":
+        if parsed_url.scheme == BackendSchemes.memory.name:
             from broadcaster._backends.memory import MemoryBackend
 
             self._backend = MemoryBackend(url)
+
+        if parsed_url.scheme == BackendSchemes.google_cloud_pubsub.value:
+            from broadcaster._backends.google.pubsub import GoogleCloudPubSubBackend
+
+            self._backend = GoogleCloudPubSubBackend(url)
 
     async def __aenter__(self) -> "Broadcast":
         await self.connect()
@@ -90,12 +108,12 @@ class Broadcast:
                 self._subscribers[channel].add(queue)
 
             yield Subscriber(queue)
-
+        finally:
             self._subscribers[channel].remove(queue)
             if not self._subscribers.get(channel):
                 del self._subscribers[channel]
                 await self._backend.unsubscribe(channel)
-        finally:
+
             await queue.put(None)
 
 

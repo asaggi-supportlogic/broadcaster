@@ -51,6 +51,7 @@ setup(
         "redis": ["asyncio-redis"],
         "postgres": ["asyncpg"],
         "kafka": ["aiokafka"],
+        "google-cloud-pubsub": ["grpcio==1.47.0rc1", "google-cloud-pubsub"],
         "test": ["pytest", "pytest-asyncio"]
     },
     classifiers=[
